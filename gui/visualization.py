@@ -62,47 +62,58 @@ class AutomatonVisualizer:
         # Draw nodes with different colors for initial and final states
         node_colors = []
         node_shapes = []
+        node_edge_colors = []
         
         for state in self.automaton.states:
             if state.is_initial and state.is_final:
                 node_colors.append('orange')  # Both initial and final
+                node_edge_colors.append('none')
             elif state.is_initial:
                 node_colors.append('lightblue')  # Initial state
+                node_edge_colors.append('none')
             elif state.is_final:
                 node_colors.append('lightgreen')  # Final state
+                node_edge_colors.append('none')
             else:
                 node_colors.append('white')  # Regular state
+                node_edge_colors.append('black')
         
         # Draw nodes
         nx.draw_networkx_nodes(G, pos, node_color=node_colors, 
                               node_size=700, ax=ax)
         
         # Draw edges
-        nx.draw_networkx_edges(G, pos, arrowsize=20, ax=ax)
+        nx.draw_networkx_edges(G, pos, arrowsize=20, ax=ax,min_source_margin=15,  min_target_margin=19)
         
         # Draw edge labels
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=ax)
         
         # Draw node labels
         nx.draw_networkx_labels(G, pos, font_size=12, ax=ax)
+
+        
         
         # Draw markers for initial and final states
         for state in self.automaton.states:
             if state.is_initial:
-                # Draw arrow towards the initial state
                 x, y = pos[state.name]
-                dx, dy = -0.15, 0
-                ax.arrow(x + dx, y + dy, dx, dy, head_width=0.05, 
-                        head_length=0.05, fc='blue', ec='blue')
+                offset = 0.35
+                dx, dy = 0, 0.15
+                head_width = 0.05
+                head_length = 0.05
+                
+                ax.arrow(x, y - offset, dx, dy, head_width=head_width, head_length=head_length, fc='blue', ec='blue')
             
             if state.is_final:
-                # Draw double circle for final states
+                
                 x, y = pos[state.name]
-                circle = plt.Circle((x, y), 0.35, fill=False, linestyle='solid')
+                radius = 0.15
+                circle = plt.Circle((x, y), radius, fill=False, linestyle='solid')
                 ax.add_patch(circle)
         
         # Remove axis
         ax.axis('off')
+        ax.set_aspect('equal')
         
         # Add title
         plt.title(f"Automaton: {self.automaton.name}")

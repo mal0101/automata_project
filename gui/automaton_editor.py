@@ -121,6 +121,14 @@ class AutomatonEditor:
         
         # Save button
         ttk.Button(form_frame, text="Save", command=self.save_state).grid(row=3, column=0, columnspan=2, pady=10)
+
+        note_frame = ttk.LabelFrame(details_frame, text="State Type Instructions")
+        note_frame.pack(fill=tk.X, pady=10)
+        
+        ttk.Label(note_frame, text="• Check 'Initial State' for initial states\n"
+                                "• Check 'Final State' for final states\n"
+                                "• Leave both unchecked for regular states",
+                justify=tk.LEFT, wraplength=300).pack(padx=10, pady=10)
         
         # Bind selection event
         self.states_list.bind("<<ListboxSelect>>", self.on_state_selected)
@@ -292,21 +300,25 @@ class AutomatonEditor:
             if state.is_initial and state.is_final:
                 node_color = 'orange'  # Both initial and final
                 node_shape = 'o'
+                edge_color = 'none'
             elif state.is_initial:
                 node_color = 'lightblue'  # Initial state
                 node_shape = 'o'
+                edge_color = 'none'
             elif state.is_final:
                 node_color = 'lightgreen'  # Final state
                 node_shape = 'o'
+                edge_color = 'none'
             else:
                 node_color = 'white'  # Regular state
                 node_shape = 'o'
+                edge_color = 'black'
             
-            nx.draw_networkx_nodes(G, pos, nodelist=[name], node_color=node_color, 
+            nx.draw_networkx_nodes(G, pos, nodelist=[name], node_color=node_color,edgecolors=edge_color, 
                                   node_shape=node_shape, node_size=700, ax=ax)
         
         # Draw edges
-        nx.draw_networkx_edges(G, pos, arrowsize=20, ax=ax)
+        nx.draw_networkx_edges(G, pos, arrowsize=20, ax=ax,min_source_margin=15,  min_target_margin=19)
         
         # Draw edge labels
         edge_labels = nx.get_edge_attributes(G, 'label')
@@ -314,24 +326,31 @@ class AutomatonEditor:
         
         # Draw node labels
         nx.draw_networkx_labels(G, pos, font_size=12, ax=ax)
+
+        
         
         # Draw markers for initial and final states
         for state in self.automaton.states:
             if state.is_initial:
-                # Draw arrow towards the initial state
                 x, y = pos[state.name]
-                dx, dy = -0.15, 0
-                ax.arrow(x + dx, y + dy, dx, dy, head_width=0.05, 
-                        head_length=0.05, fc='blue', ec='blue')
+                offset = 0.35
+                dx, dy = 0, 0.15
+                head_width = 0.05
+                head_length = 0.05
+                
+                ax.arrow(x, y - offset, dx, dy, head_width=head_width, head_length=head_length, fc='blue', ec='blue')
+
             
             if state.is_final:
                 # Draw double circle for final states
                 x, y = pos[state.name]
-                circle = plt.Circle((x, y), 0.35, fill=False, linestyle='solid')
+                radius = 0.15
+                circle = plt.Circle((x, y), radius, fill=False, linestyle='solid')
                 ax.add_patch(circle)
         
         # Remove axis
         ax.axis('off')
+        ax.set_aspect('equal')
         
         # Add title
         plt.title(f"Automaton: {self.automaton.name}")
