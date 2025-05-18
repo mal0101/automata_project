@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 from math import sqrt
 import os
+import numpy as np
     
 class DraggableState:
     def __init__(self, fig, ax, pos, state_map, on_drag_complete=None):
@@ -429,10 +430,10 @@ class VisualizationHelper:
                 node_edge_colors.append('black')
                 
         return node_colors, node_edge_colors
-    
+
     @staticmethod
     def draw_graph(G, pos, ax, states, edge_labels=None, highlight_states=None, highlight_edges=None, custom_colors=None):
-        """Draw the graph with consistent styling."""
+        """Draw the graph with labels following edge curvature correctly."""
         # Get node colors
         node_colors, node_edge_colors = VisualizationHelper.get_node_colors(states, custom_colors)
         
@@ -447,18 +448,75 @@ class VisualizationHelper:
         nx.draw_networkx_nodes(G, pos, node_color=node_colors, 
                              node_size=700, edgecolors=node_edge_colors, ax=ax)
         
-        # Draw edges with highlight if specified
-        if highlight_edges:
-            edge_colors = ['red' if edge in highlight_edges else 'black' for edge in G.edges()]
-            edge_widths = [2.0 if edge in highlight_edges else 1.0 for edge in G.edges()]
-            nx.draw_networkx_edges(G, pos, arrowsize=20, edge_color=edge_colors,
-                                 width=edge_widths, ax=ax, min_source_margin=15, min_target_margin=19)
-        else:
-            nx.draw_networkx_edges(G, pos, arrowsize=20, ax=ax, min_source_margin=15, min_target_margin=19)
+        # Custom label positioning to follow curve correctly
+        def curved_edge_label_pos(u, v, rad=0.4):
+            """Calculate label position for curved edges with correct orientation."""
+            x1, y1 = pos[u]
+            x2, y2 = pos[v]
+            
+            # Midpoint
+            mid_x, mid_y = (x1 + x2) / 2, (y1 + y2) / 2
+            
+            # Calculate perpendicular offset based on curvature
+            dx, dy = x2 - x1, y2 - y1
+            perp_dx = -dy
+            perp_dy = dx
+            
+            # Normalize perpendicular vector
+            magnitude = np.sqrt(perp_dx**2 + perp_dy**2)
+            
+            # Adjust sign to ensure correct side of curve
+            # Use cross product to determine curve direction
+            cross_product = dx * perp_dy - dy * perp_dx
+            sign = -1 if cross_product > 0 else 1
+            
+            perp_dx *= sign * rad / magnitude
+            perp_dy *= sign * rad / magnitude
+            
+            # Offset label along the perpendicular
+            label_x = mid_x + perp_dx
+            label_y = mid_y + perp_dy
+            
+            return label_x, label_y
         
-        # Draw labels
+        # Handle edge drawing
+        for edge in G.edges():
+            # Normal edges with slight curve
+            nx.draw_networkx_edges(
+                G, pos, 
+                edgelist=[edge], 
+                connectionstyle='arc3,rad=0.4',  # Slight curve
+                arrowsize=20, 
+                min_source_margin=15, 
+                min_target_margin=15,
+                ax=ax
+            )
+        
+        # Highlight specific edges if requested
+        if highlight_edges:
+            highlight_edge_list = [edge for edge in G.edges() if edge in highlight_edges]
+            nx.draw_networkx_edges(
+                G, pos, 
+                edgelist=highlight_edge_list, 
+                edge_color='red', 
+                width=2.0, 
+                connectionstyle='arc3,rad=0.4',
+                arrowsize=20, 
+                ax=ax
+            )
+        
+        # Custom edge label positioning
         if edge_labels:
-            nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=ax)
+            for (u, v) in G.edges():
+                if (u, v) in edge_labels:
+                    label_x, label_y = curved_edge_label_pos(u, v)
+                    ax.text(label_x, label_y, edge_labels[(u, v)], 
+                            fontsize=10, 
+                            bbox=dict(facecolor='white', edgecolor='none', alpha=0.7),
+                            horizontalalignment='center',
+                            verticalalignment='center')
+        
+        # Draw node labels
         nx.draw_networkx_labels(G, pos, font_size=12, ax=ax)
         
         # Draw markers for initial and final states
@@ -474,7 +532,7 @@ class VisualizationHelper:
             
             if state.is_final:
                 x, y = pos[state.name]
-                radius = 0.15
+                radius = 0.125
                 circle = plt.Circle((x, y), radius, fill=False, linestyle='solid')
                 ax.add_patch(circle)
         
