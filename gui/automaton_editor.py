@@ -48,19 +48,6 @@ class AutomatonEditor:
         """Update the editor title with the current automaton name."""
         self.title_var.set(f"Editing: {self.automaton.name}")
     
-    def create_visualization_tab(self):
-        """Create the tab for automaton visualization."""
-        tab = ttk.Frame(self.notebook)
-        self.notebook.add(tab, text="Visualization")
-        
-        # Create frame for the graph
-        self.graph_frame = ttk.Frame(tab)
-        self.graph_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Add refresh button
-        refresh_btn = ttk.Button(tab, text="Refresh", command=self.update_visualization)
-        refresh_btn.pack(pady=(0, 10))
-    
     def create_states_tab(self):
         """Create the tab for managing states."""
         tab = ttk.Frame(self.notebook)
@@ -617,13 +604,9 @@ class AutomatonEditor:
         tab = ttk.Frame(self.notebook)
         self.notebook.add(tab, text="Visualization")
     
-        # Create frame for the graph
-        self.graph_frame = ttk.Frame(tab)
-        self.graph_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-    
         # Create button frame
         btn_frame = ttk.Frame(tab)
-        btn_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
+        btn_frame.pack(fill=tk.X, padx=10, pady=(10, 5))
     
         # Add visualization control buttons
         ttk.Button(btn_frame, text="Refresh", 
@@ -637,6 +620,10 @@ class AutomatonEditor:
     
         ttk.Button(btn_frame, text="Export Image", 
               command=self.export_visualization).pack(side=tk.LEFT)
+    
+        # Create frame for the graph
+        self.graph_frame = ttk.Frame(tab)
+        self.graph_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
     def update_visualization(self):
         """Update the automaton visualization."""
@@ -656,10 +643,17 @@ class AutomatonEditor:
 
     def simulate_word(self):
         """Open the dialog to simulate word processing."""
+        if not hasattr(self, 'visualizer'):
+            messagebox.showinfo("Information", "Please refresh the visualization first.")
+            return
+            
         from gui.dialogs import WordSimulationDialog
         dialog = WordSimulationDialog(self.frame, self.automaton, self.visualizer)
+        
+        # After dialog closes, update visualization to clear simulation highlights
+        self.update_visualization()
 
     def export_visualization(self):
         """Export the visualization as an image file."""
         if hasattr(self, 'visualizer'):
-            self.visualizer.save_figure()
+            self.visualizer.save_figure(self.automaton.name + ".png")

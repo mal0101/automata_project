@@ -4,201 +4,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
 from tkinter import ttk
 from math import sqrt
-
-class AutomatonVisualizer:
-    """
-    Handles visualization of automata using NetworkX and Matplotlib.
-    """
+import os
     
-    def __init__(self, frame, automaton):
-        """
-        Initialize the visualizer.
-        
-        Args:
-            frame: Tkinter frame to place the visualization in
-            automaton: The automaton to visualize
-        """
-        self.frame = frame
-        self.automaton = automaton
-        self.canvas = None
-        self.figure = None
-        
-        self.node_colors = {
-            "regular" : "white",
-            "initial" : "lightblue",
-            "final" : "lightgreen",
-            "initial_final" : "orange"
-        }
-        self.node_size = 700
-        self.font_size = 12
-        self.saved_positions = None
-    
-
-    
-    
-    def visualize(self):
-        """
-        Create and display a visualization of the automaton.
-        """
-        # Clear previous visualization
-        for widget in self.frame.winfo_children():
-            widget.destroy()
-        
-        # Create a directed graph
-        G = nx.DiGraph()
-        
-        # Add nodes (states)
-        for state in self.automaton.states:
-            G.add_node(state.name)
-        
-        # Add edges (transitions)
-        edge_labels = {}
-        for transition in self.automaton.transitions:
-            source = transition.source_state.name
-            target = transition.target_state.name
-            symbol = transition.symbol
-            
-            # Create the edge if it doesn't exist
-            if not G.has_edge(source, target):
-                G.add_edge(source, target)
-                edge_labels[(source, target)] = symbol
-            else:
-                # Append the symbol to existing edge label
-                current_label = edge_labels[(source, target)]
-                edge_labels[(source, target)] = f"{current_label},{symbol}"
-        
-        # Create figure and axis
-        self.figure, ax = plt.subplots(figsize=(8, 6))
-        
-        # Calculate layout - use spring layout for natural spacing
-        pos = nx.spring_layout(G, seed=42)
-        
-        # Draw nodes with different colors for initial and final states
-        node_colors = []
-        node_shapes = []
-        node_edge_colors = []
-        
-        for state in self.automaton.states:
-            if state.is_initial and state.is_final:
-                node_colors.append('orange')  # Both initial and final
-                node_edge_colors.append('none')
-            elif state.is_initial:
-                node_colors.append('lightblue')  # Initial state
-                node_edge_colors.append('none')
-            elif state.is_final:
-                node_colors.append('lightgreen')  # Final state
-                node_edge_colors.append('none')
-            else:
-                node_colors.append('white')  # Regular state
-                node_edge_colors.append('black')
-        
-        # Draw nodes
-        nx.draw_networkx_nodes(G, pos, node_color=node_colors, 
-                              node_size=700, ax=ax)
-        
-        # Draw edges
-        nx.draw_networkx_edges(G, pos, arrowsize=20, ax=ax,min_source_margin=15,  min_target_margin=19)
-        
-        # Draw edge labels
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=ax)
-        
-        # Draw node labels
-        nx.draw_networkx_labels(G, pos, font_size=12, ax=ax)
-
-        
-        
-        # Draw markers for initial and final states
-        for state in self.automaton.states:
-            if state.is_initial:
-                x, y = pos[state.name]
-                offset = 0.35
-                dx, dy = 0, 0.15
-                head_width = 0.05
-                head_length = 0.05
-                
-                ax.arrow(x, y - offset, dx, dy, head_width=head_width, head_length=head_length, fc='blue', ec='blue')
-            
-            if state.is_final:
-                
-                x, y = pos[state.name]
-                radius = 0.15
-                circle = plt.Circle((x, y), radius, fill=False, linestyle='solid')
-                ax.add_patch(circle)
-        
-        # Remove axis
-        ax.axis('off')
-        ax.set_aspect('equal')
-        
-        # Add title
-        plt.title(f"Automaton: {self.automaton.name}")
-        
-        # Create legend
-        from matplotlib.lines import Line2D
-        legend_elements = [
-            Line2D([0], [0], marker='o', color='w', markerfacecolor='lightblue', 
-                  markersize=15, label='Initial State'),
-            Line2D([0], [0], marker='o', color='w', markerfacecolor='lightgreen', 
-                  markersize=15, label='Final State'),
-            Line2D([0], [0], marker='o', color='w', markerfacecolor='orange', 
-                  markersize=15, label='Initial & Final State'),
-            Line2D([0], [0], marker='o', color='w', markerfacecolor='white', 
-                  markersize=15, label='Regular State')
-        ]
-        ax.legend(handles=legend_elements, loc='upper center', 
-                 bbox_to_anchor=(0.5, 0), ncol=4)
-        
-        # Embed the figure in the Tkinter window
-        self.canvas = FigureCanvasTkAgg(self.figure, master=self.frame)
-        self.canvas.draw()
-        canvas_widget = self.canvas.get_tk_widget()
-        canvas_widget.pack(fill=tk.BOTH, expand=True)
-        
-        # Add toolbar
-        from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
-        toolbar_frame = ttk.Frame(self.frame)
-        toolbar_frame.pack(fill=tk.X)
-        toolbar = NavigationToolbar2Tk(self.canvas, toolbar_frame)
-        toolbar.update()
-    
-        # Enable interactive features if requested
-        if interactive:
-        # Store a reference to the visualizer in the state_map for the DraggableState
-            self.state_map['__visualizer__'] = self
-    
-        # Make states draggable
-            self.draggable = DraggableState(self.figure, ax, self.pos, self.state_map, 
-                                   on_drag_complete=self.on_drag_complete)
-            self.draggable.redraw_graph = lambda: self.draggable.redraw_graph()  
-    
-    
-    def save_figure(self, filename):
-        """
-        Save the current visualization to a file.
-        
-        Args:
-            filename: Path to save the image
-        """
-        if self.figure:
-            self.figure.savefig(filename, dpi=300, bbox_inches='tight')
-            return True
-        return False
-    
-    def update(self, automaton):
-        """
-        Update the visualization with a new automaton.
-        
-        Args:
-            automaton: The new automaton to visualize
-        """
-        self.automaton = automaton
-        self.visualize()
-    
-    def redraw_graph(self):
-        """Redraw the graph using current positions."""
-        # Simply call visualize with the same interactive setting
-        self.visualize(interactive=True)
-    
-       
 class DraggableState:
     def __init__(self, fig, ax, pos, state_map, on_drag_complete=None):
         self.fig = fig
@@ -257,11 +64,11 @@ class DraggableState:
             # Create a directed graph
             G = nx.DiGraph()
         
-        # Add nodes (states)
+            # Add nodes (states)
             for state_name in self.pos:
                 G.add_node(state_name)
         
-        # Add edges (transitions)
+            # Add edges (transitions)
             edge_labels = {}
             for transition in visualizer.automaton.transitions:
                 source = transition.source_state.name
@@ -274,54 +81,9 @@ class DraggableState:
                     G.add_edge(source, target)
                     edge_labels[(source, target)] = symbol
         
-        # Get node colors
-            node_colors = []
-            node_shapes = []
-            node_edge_colors = []
+            # Draw the graph using helper
+            VisualizationHelper.draw_graph(G, self.pos, self.ax, visualizer.automaton.states, edge_labels)
         
-        for state in self.automaton.states:
-            if state.is_initial and state.is_final:
-                node_colors.append('orange')  # Both initial and final
-                node_edge_colors.append('none')
-            elif state.is_initial:
-                node_colors.append('lightblue')  # Initial state
-                node_edge_colors.append('none')
-            elif state.is_final:
-                node_colors.append('lightgreen')  # Final state
-                node_edge_colors.append('none')
-            else:
-                node_colors.append('white')  # Regular state
-                node_edge_colors.append('black')
-        
-        # Draw the graph with current positions
-            nx.draw_networkx_nodes(G, self.pos, node_color=node_colors, node_size=700, ax=self.ax)
-            nx.draw_networkx_edges(G, self.pos, arrowsize=20, ax=self.ax, min_source_margin=15, min_target_margin=19)
-            nx.draw_networkx_edge_labels(G, self.pos, edge_labels=edge_labels, ax=self.ax)
-            nx.draw_networkx_labels(G, self.pos, font_size=12, ax=self.ax)
-        
-        # Draw markers for initial and final states
-            for state in visualizer.automaton.states:
-                if state.is_initial:
-                    x, y = self.pos[state.name]
-                    offset = 0.35
-                    dx, dy = 0, 0.15
-                    head_width = 0.05
-                    head_length = 0.05
-                    
-                    self.ax.arrow(x, y - offset, dx, dy, head_width=head_width, head_length=head_length, fc='blue', ec='blue')
-            
-                if state.is_final:
-                    x, y = self.pos[state.name]
-                    radius = 0.15
-                    circle = plt.Circle((x, y), radius, fill=False, linestyle='solid')
-                    self.ax.add_patch(circle)
-        
-       
-            self.ax.set_aspect('equal')
-        
-        # Remove axis
-            self.ax.axis('off')
-    
     def disconnect(self):
         """Disconnect all event callbacks to free resources."""
         if hasattr(self, 'cid_press') and self.cid_press:
@@ -330,6 +92,7 @@ class DraggableState:
             self.fig.canvas.mpl_disconnect(self.cid_release)
         if hasattr(self, 'cid_motion') and self.cid_motion:
             self.fig.canvas.mpl_disconnect(self.cid_motion)
+
 class AutomatonVisualizer:
     def __init__(self, frame, automaton):
         self.frame = frame
@@ -339,6 +102,7 @@ class AutomatonVisualizer:
         self.pos = None  # Will store node positions
         self.draggable = None
         self.state_map = {}  # Maps state names to node objects
+        self.custom_colors = None  # Store custom colors
     
     def visualize(self, interactive=True):
         # Clear previous visualization
@@ -373,62 +137,25 @@ class AutomatonVisualizer:
         if self.pos is None:
             self.pos = nx.spring_layout(G, seed=42)
         
-        # Draw nodes with custom colors
-        node_colors = []
-        node_shapes = []
-        node_edge_colors = []
-        for state in self.automaton.states:
-            if state.is_initial and state.is_final:
-                node_colors.append('orange')  # Both initial and final
-                node_edge_colors.append('none')
-            elif state.is_initial:
-                node_colors.append('lightblue')  # Initial state
-                node_edge_colors.append('none')
-            elif state.is_final:
-                node_colors.append('lightgreen')  # Final state
-                node_edge_colors.append('none')
-            else:
-                node_colors.append('white')  # Regular state
-                node_edge_colors.append('black')
-        
-        
-        # Draw the graph
-        nx.draw_networkx_nodes(G, self.pos, node_color=node_colors, node_size=700, ax=ax)
-        nx.draw_networkx_edges(G, self.pos, arrowsize=20, ax=ax,min_source_margin=15, min_target_margin=19)
-        nx.draw_networkx_edge_labels(G, self.pos, edge_labels=edge_labels, ax=ax)
-        nx.draw_networkx_labels(G, self.pos, font_size=12, ax=ax)
-        
-        # Draw markers for initial and final states
-        for state in self.automaton.states:
-            if state.is_initial:
-                x, y = self.pos[state.name]
-                offset = 0.35
-                dx, dy = 0, 0.15
-                head_width = 0.05
-                head_length = 0.05
-                
-                ax.arrow(x, y - offset, dx, dy, head_width=head_width, head_length=head_length, fc='blue', ec='blue')
-        
-            if state.is_final:
-                x, y = self.pos[state.name]
-                radius = 0.15
-                circle = plt.Circle((x, y), radius, fill=False, linestyle='solid')
-                ax.add_patch(circle)
-    
-       
-        ax.set_aspect('equal')
+        # Draw the graph using helper
+        VisualizationHelper.draw_graph(G, self.pos, ax, self.automaton.states, edge_labels, custom_colors=self.custom_colors)
         
         # Add title and legend
         ax.set_title(f"Automaton: {self.automaton.name}")
-        ax.axis('off')
         
         # Create legend
         from matplotlib.lines import Line2D
+        colors = self.custom_colors or {
+            "initial": "lightblue",
+            "final": "lightgreen",
+            "initial_final": "orange",
+            "regular": "white"
+        }
         legend_elements = [
-            Line2D([0], [0], marker='o', color='w', markerfacecolor='lightblue', markersize=15, label='Initial State'),
-            Line2D([0], [0], marker='o', color='w', markerfacecolor='lightgreen', markersize=15, label='Final State'),
-            Line2D([0], [0], marker='o', color='w', markerfacecolor='orange', markersize=15, label='Initial & Final State'),
-            Line2D([0], [0], marker='o', color='w', markerfacecolor='white', markersize=15, label='Regular State')
+            Line2D([0], [0], marker='o', color='w', markerfacecolor=colors["initial"], markersize=15, label='Initial State'),
+            Line2D([0], [0], marker='o', color='w', markerfacecolor=colors["final"], markersize=15, label='Final State'),
+            Line2D([0], [0], marker='o', color='w', markerfacecolor=colors["initial_final"], markersize=15, label='Initial & Final State'),
+            Line2D([0], [0], marker='o', color='w', markerfacecolor=colors["regular"], markersize=15, label='Regular State')
         ]
         ax.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, 0), ncol=4)
         
@@ -466,7 +193,7 @@ class AutomatonVisualizer:
             # You could save the positions to a file if needed
             self.save_layout_to_file()
     
-    def save_figure(self, filename=None):
+    def save_figure(self, filename):
         """
         Save the current visualization to a file.
     
@@ -478,41 +205,41 @@ class AutomatonVisualizer:
         """
         if not self.figure:
             return False
-    
-        if filename is None:
-            from tkinter import filedialog
-            filetypes = [
+            
+        from tkinter import filedialog
+        filetypes = [
             ('PNG Image', '*.png'),
             ('JPEG Image', '*.jpg'),
             ('SVG Image', '*.svg'),
             ('PDF Document', '*.pdf')
-            ]
-            filename = filedialog.asksaveasfilename(
-                defaultextension=".png",
-                filetypes=filetypes,
-                title="Save Visualization As"
-            )
-        
-            if not filename:  # User cancelled
-                return False
+        ]
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".png",
+            filetypes=filetypes,
+            initialfile=filename,
+            title="Save Visualization As"
+        )
     
-            try:
-        # Get the extension to determine format
-                ext = os.path.splitext(filename)[1].lower()
-        
-        # If svg, need to use specific backend
-                if ext == '.svg':
-                    from matplotlib.backends.backend_svg import FigureCanvasSVG
-                    canvas = FigureCanvasSVG(self.figure)
-                    canvas.print_figure(filename)
-                else:
-                    self.figure.savefig(filename, dpi=300, bbox_inches='tight')
-        
-                return True
-            except Exception as e:
-                import tkinter.messagebox as messagebox
-                messagebox.showerror("Error", f"Failed to save image: {str(e)}")
-                return False
+        if not filename:  # User cancelled
+            return False
+
+        try:
+            # Get the extension to determine format
+            ext = os.path.splitext(filename)[1].lower()
+    
+            # If svg, need to use specific backend
+            if ext == '.svg':
+                from matplotlib.backends.backend_svg import FigureCanvasSVG
+                canvas = FigureCanvasSVG(self.figure)
+                canvas.print_figure(filename)
+            else:
+                self.figure.savefig(filename, dpi=300, bbox_inches='tight')
+    
+            return True
+        except Exception as e:
+            import tkinter.messagebox as messagebox
+            messagebox.showerror("Error", f"Failed to save image: {str(e)}")
+            return False
 
 class AutomatonSimulator:
     def __init__(self, visualizer, automaton):
@@ -621,74 +348,9 @@ class AutomatonSimulator:
                 G.add_edge(source, target)
                 edge_labels[(source, target)] = symbol
         
-        # Draw nodes with highlight for current states
-        node_colors = []
-        node_sizes = []
-        edgecolors = []
-        
-        for state in self.automaton.states:
-            if state in self.current_states:
-                # Highlight current state
-                node_colors.append('red')
-                node_sizes.append(800)
-                edgecolors.append('red')
-            else:
-                # Normal coloring
-                if state.is_initial and state.is_final:
-                    node_colors.append('orange')
-                elif state.is_initial:
-                    node_colors.append('lightblue')
-                elif state.is_final:
-                    node_colors.append('lightgreen')
-                else:
-                    node_colors.append('white')
-                node_sizes.append(700)
-                edgecolors.append('black')
-        
-        # Draw nodes
-        nx.draw_networkx_nodes(G, self.pos, node_color=node_colors, 
-                              node_size=node_sizes, edgecolors=edgecolors, ax=self.ax , min_source_margin=15, min_target_margin=19)
-        
-        # Draw edges with highlight for current transitions
-        edge_colors = []
-        edge_widths = []
-        
-        for edge in G.edges():
-            if edge in self.highlight_edges:
-                edge_colors.append('red')
-                edge_widths.append(2.0)
-            else:
-                edge_colors.append('black')
-                edge_widths.append(1.0)
-        
-        nx.draw_networkx_edges(G, self.pos, arrowsize=20, 
-                              edge_color=edge_colors, width=edge_widths, ax=self.ax , min_source_margin=15, min_target_margin=19)
-        
-        # Draw edge labels
-        nx.draw_networkx_edge_labels(G, self.pos, edge_labels=edge_labels, ax=self.ax)
-        
-        # Draw node labels
-        nx.draw_networkx_labels(G, self.pos, font_size=12, ax=self.ax)
-        
-        # Draw markers for initial and final states
-        for state in self.automaton.states:
-            if state.is_initial:
-                x, y = self.pos[state.name]
-                offset = 0.35
-                dx, dy = 0, 0.15
-                head_width = 0.05
-                head_length = 0.05
-                
-                self.ax.arrow(x, y - offset, dx, dy, head_width=head_width, head_length=head_length, fc='blue', ec='blue')
-        
-            if state.is_final:
-                x, y = self.pos[state.name]
-                radius = 0.15
-                circle = plt.Circle((x, y), radius, fill=False, linestyle='solid')
-                self.ax.add_patch(circle)
-    
-       
-        self.ax.set_aspect('equal')
+        # Draw the graph using helper with highlights
+        VisualizationHelper.draw_graph(G, self.pos, self.ax, self.automaton.states, 
+                                     edge_labels, self.current_states, self.highlight_edges)
         
         # Add simulation status text
         processed = self.word[:self.current_position]
@@ -697,9 +359,8 @@ class AutomatonSimulator:
         self.ax.text(0.5, -0.1, status_text, transform=self.ax.transAxes,
                     ha='center', fontsize=12)
         
-        # Update ax title and disable axis
+        # Update ax title
         self.ax.set_title(f"Simulating: {self.word}")
-        self.ax.axis('off')
         
         # Redraw the figure
         self.figure.canvas.draw_idle()
@@ -726,3 +387,96 @@ class AutomatonSimulator:
         
         # Redraw the figure
         self.figure.canvas.draw_idle()
+
+class VisualizationHelper:
+    """Helper class for visualization-related operations."""
+    
+    @staticmethod
+    def get_node_colors(states, custom_colors=None):
+        """Get colors for nodes based on their type.
+        
+        Args:
+            states: List of states to color
+            custom_colors: Dictionary of custom colors for different state types
+        """
+        node_colors = []
+        node_edge_colors = []
+        
+        # Default colors
+        colors = {
+            "regular": "white",
+            "initial": "lightblue",
+            "final": "lightgreen",
+            "initial_final": "orange"
+        }
+        
+        # Override with custom colors if provided
+        if custom_colors:
+            colors.update(custom_colors)
+        
+        for state in states:
+            if state.is_initial and state.is_final:
+                node_colors.append(colors["initial_final"])
+                node_edge_colors.append('none')
+            elif state.is_initial:
+                node_colors.append(colors["initial"])
+                node_edge_colors.append('none')
+            elif state.is_final:
+                node_colors.append(colors["final"])
+                node_edge_colors.append('none')
+            else:
+                node_colors.append(colors["regular"])
+                node_edge_colors.append('black')
+                
+        return node_colors, node_edge_colors
+    
+    @staticmethod
+    def draw_graph(G, pos, ax, states, edge_labels=None, highlight_states=None, highlight_edges=None, custom_colors=None):
+        """Draw the graph with consistent styling."""
+        # Get node colors
+        node_colors, node_edge_colors = VisualizationHelper.get_node_colors(states, custom_colors)
+        
+        # Adjust colors for highlighted states
+        if highlight_states:
+            for i, state in enumerate(states):
+                if state in highlight_states:
+                    node_colors[i] = 'red'
+                    node_edge_colors[i] = 'red'
+        
+        # Draw nodes
+        nx.draw_networkx_nodes(G, pos, node_color=node_colors, 
+                             node_size=700, edgecolors=node_edge_colors, ax=ax)
+        
+        # Draw edges with highlight if specified
+        if highlight_edges:
+            edge_colors = ['red' if edge in highlight_edges else 'black' for edge in G.edges()]
+            edge_widths = [2.0 if edge in highlight_edges else 1.0 for edge in G.edges()]
+            nx.draw_networkx_edges(G, pos, arrowsize=20, edge_color=edge_colors,
+                                 width=edge_widths, ax=ax, min_source_margin=15, min_target_margin=19)
+        else:
+            nx.draw_networkx_edges(G, pos, arrowsize=20, ax=ax, min_source_margin=15, min_target_margin=19)
+        
+        # Draw labels
+        if edge_labels:
+            nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=ax)
+        nx.draw_networkx_labels(G, pos, font_size=12, ax=ax)
+        
+        # Draw markers for initial and final states
+        for state in states:
+            if state.is_initial:
+                x, y = pos[state.name]
+                offset = 0.35
+                dx, dy = 0, 0.15
+                head_width = 0.05
+                head_length = 0.05
+                
+                ax.arrow(x, y - offset, dx, dy, head_width=head_width, head_length=head_length, fc='blue', ec='blue')
+            
+            if state.is_final:
+                x, y = pos[state.name]
+                radius = 0.15
+                circle = plt.Circle((x, y), radius, fill=False, linestyle='solid')
+                ax.add_patch(circle)
+        
+        ax.set_aspect('equal')
+        ax.axis('off')

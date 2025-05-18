@@ -203,13 +203,13 @@ class StateStyleDialog:
         main_frame = ttk.Frame(self.dialog, padding=(10, 10, 10, 10))
         main_frame.pack(fill=tk.BOTH, expand=True)
         
-        # State selection
-        ttk.Label(main_frame, text="Select state:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.state_var = tk.StringVar()
-        state_combo = ttk.Combobox(main_frame, textvariable=self.state_var, width=20)
-        state_combo['values'] = [state.name for state in self.automaton.states]
-        state_combo.grid(row=0, column=1, sticky=tk.W, pady=5)
-        state_combo.bind("<<ComboboxSelected>>", self.on_state_selected)
+        # Get current colors from visualizer or use defaults
+        current_colors = self.visualizer.custom_colors or {
+            "regular": "white",
+            "initial": "lightblue",
+            "final": "lightgreen",
+            "initial_final": "orange"
+        }
         
         # Color options
         ttk.Label(main_frame, text="State Colors").grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=(10, 5))
@@ -218,28 +218,28 @@ class StateStyleDialog:
         
         # Regular state color
         ttk.Label(main_frame, text="Regular state:").grid(row=2, column=0, sticky=tk.W, pady=5)
-        self.regular_color_var = tk.StringVar(value="white")
+        self.regular_color_var = tk.StringVar(value=current_colors["regular"])
         regular_combo = ttk.Combobox(main_frame, textvariable=self.regular_color_var, width=15)
         regular_combo['values'] = colors
         regular_combo.grid(row=2, column=1, sticky=tk.W, pady=5)
         
         # Initial state color
         ttk.Label(main_frame, text="Initial state:").grid(row=3, column=0, sticky=tk.W, pady=5)
-        self.initial_color_var = tk.StringVar(value="lightblue")
+        self.initial_color_var = tk.StringVar(value=current_colors["initial"])
         initial_combo = ttk.Combobox(main_frame, textvariable=self.initial_color_var, width=15)
         initial_combo['values'] = colors
         initial_combo.grid(row=3, column=1, sticky=tk.W, pady=5)
         
         # Final state color
         ttk.Label(main_frame, text="Final state:").grid(row=4, column=0, sticky=tk.W, pady=5)
-        self.final_color_var = tk.StringVar(value="lightgreen")
+        self.final_color_var = tk.StringVar(value=current_colors["final"])
         final_combo = ttk.Combobox(main_frame, textvariable=self.final_color_var, width=15)
         final_combo['values'] = colors
         final_combo.grid(row=4, column=1, sticky=tk.W, pady=5)
         
         # Initial & Final state color
         ttk.Label(main_frame, text="Initial & Final:").grid(row=5, column=0, sticky=tk.W, pady=5)
-        self.initial_final_color_var = tk.StringVar(value="orange")
+        self.initial_final_color_var = tk.StringVar(value=current_colors["initial_final"])
         initial_final_combo = ttk.Combobox(main_frame, textvariable=self.initial_final_color_var, width=15)
         initial_final_combo['values'] = colors
         initial_final_combo.grid(row=5, column=1, sticky=tk.W, pady=5)
@@ -272,16 +272,14 @@ class StateStyleDialog:
         pass
     
     def on_apply(self):
+        """Apply the selected style settings to the visualization."""
         # Update visualizer settings
-        self.visualizer.node_colors = {
+        self.visualizer.custom_colors = {
             "regular": self.regular_color_var.get(),
             "initial": self.initial_color_var.get(),
             "final": self.final_color_var.get(),
             "initial_final": self.initial_final_color_var.get()
         }
-        
-        self.visualizer.node_size = self.node_size_var.get()
-        self.visualizer.font_size = self.font_size_var.get()
         
         # Update visualization
         self.visualizer.visualize()
@@ -310,6 +308,9 @@ class WordSimulationDialog:
         
         # Create widgets
         self.create_widgets()
+        
+        # Handle dialog close
+        self.dialog.protocol("WM_DELETE_WINDOW", self.on_close)
         
         # Wait for dialog to close
         parent.wait_window(self.dialog)
@@ -352,11 +353,12 @@ class WordSimulationDialog:
         ttk.Button(button_frame, text="Close", command=self.on_close).pack(side=tk.LEFT)
     
     def start_simulation(self):
+        """Start the word simulation."""
         word = self.word_var.get()
         speed = self.speed_var.get()
         
         if not word and word != "":  # Allow empty word
-            tk.messagebox.showinfo("Error", "Please enter a word to process.")
+            messagebox.showinfo("Error", "Please enter a word to process.")
             return
         
         # Initialize the simulator
@@ -366,6 +368,14 @@ class WordSimulationDialog:
         # Start the simulation
         self.dialog.withdraw()  # Hide dialog during simulation
         self.simulator.simulate_word(word, speed)
+        
+        # Show dialog again after simulation
+        self.dialog.deiconify()
     
     def on_close(self):
+        """Handle dialog close."""
+        # Stop any ongoing simulation
+        if self.simulator and hasattr(self.simulator, 'timer'):
+            self.simulator.timer.stop()
+        
         self.dialog.destroy()
