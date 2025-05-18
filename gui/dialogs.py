@@ -172,3 +172,200 @@ class NumberInputDialog:
     def on_cancel(self):
         """Handle Cancel button click."""
         self.dialog.destroy()
+    
+class StateStyleDialog:
+    def __init__(self, parent, automaton, visualizer):
+        self.result = None
+        self.automaton = automaton
+        self.visualizer = visualizer
+        
+        # Create dialog
+        self.dialog = tk.Toplevel(parent)
+        self.dialog.title("State Styling")
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+        
+        # Set window size and position
+        window_width = 400
+        window_height = 400
+        position_right = parent.winfo_x() + (parent.winfo_width() // 2) - (window_width // 2)
+        position_down = parent.winfo_y() + (parent.winfo_height() // 2) - (window_height // 2)
+        self.dialog.geometry(f"{window_width}x{window_height}+{position_right}+{position_down}")
+        
+        # Create style options
+        self.create_widgets()
+        
+        # Wait for dialog to close
+        parent.wait_window(self.dialog)
+    
+    def create_widgets(self):
+        # Create the main frame
+        main_frame = ttk.Frame(self.dialog, padding=(10, 10, 10, 10))
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # State selection
+        ttk.Label(main_frame, text="Select state:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.state_var = tk.StringVar()
+        state_combo = ttk.Combobox(main_frame, textvariable=self.state_var, width=20)
+        state_combo['values'] = [state.name for state in self.automaton.states]
+        state_combo.grid(row=0, column=1, sticky=tk.W, pady=5)
+        state_combo.bind("<<ComboboxSelected>>", self.on_state_selected)
+        
+        # Color options
+        ttk.Label(main_frame, text="State Colors").grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=(10, 5))
+        
+        colors = ["white", "lightblue", "lightgreen", "orange", "yellow", "pink", "red", "blue", "green"]
+        
+        # Regular state color
+        ttk.Label(main_frame, text="Regular state:").grid(row=2, column=0, sticky=tk.W, pady=5)
+        self.regular_color_var = tk.StringVar(value="white")
+        regular_combo = ttk.Combobox(main_frame, textvariable=self.regular_color_var, width=15)
+        regular_combo['values'] = colors
+        regular_combo.grid(row=2, column=1, sticky=tk.W, pady=5)
+        
+        # Initial state color
+        ttk.Label(main_frame, text="Initial state:").grid(row=3, column=0, sticky=tk.W, pady=5)
+        self.initial_color_var = tk.StringVar(value="lightblue")
+        initial_combo = ttk.Combobox(main_frame, textvariable=self.initial_color_var, width=15)
+        initial_combo['values'] = colors
+        initial_combo.grid(row=3, column=1, sticky=tk.W, pady=5)
+        
+        # Final state color
+        ttk.Label(main_frame, text="Final state:").grid(row=4, column=0, sticky=tk.W, pady=5)
+        self.final_color_var = tk.StringVar(value="lightgreen")
+        final_combo = ttk.Combobox(main_frame, textvariable=self.final_color_var, width=15)
+        final_combo['values'] = colors
+        final_combo.grid(row=4, column=1, sticky=tk.W, pady=5)
+        
+        # Initial & Final state color
+        ttk.Label(main_frame, text="Initial & Final:").grid(row=5, column=0, sticky=tk.W, pady=5)
+        self.initial_final_color_var = tk.StringVar(value="orange")
+        initial_final_combo = ttk.Combobox(main_frame, textvariable=self.initial_final_color_var, width=15)
+        initial_final_combo['values'] = colors
+        initial_final_combo.grid(row=5, column=1, sticky=tk.W, pady=5)
+        
+        # Size options
+        ttk.Label(main_frame, text="State Size").grid(row=6, column=0, columnspan=2, sticky=tk.W, pady=(10, 5))
+        
+        ttk.Label(main_frame, text="Node size:").grid(row=7, column=0, sticky=tk.W, pady=5)
+        self.node_size_var = tk.IntVar(value=700)
+        node_size_spinbox = ttk.Spinbox(main_frame, from_=300, to=1200, increment=50, textvariable=self.node_size_var, width=5)
+        node_size_spinbox.grid(row=7, column=1, sticky=tk.W, pady=5)
+        
+        # Label font size
+        ttk.Label(main_frame, text="Font size:").grid(row=8, column=0, sticky=tk.W, pady=5)
+        self.font_size_var = tk.IntVar(value=12)
+        font_size_spinbox = ttk.Spinbox(main_frame, from_=8, to=20, increment=1, textvariable=self.font_size_var, width=5)
+        font_size_spinbox.grid(row=8, column=1, sticky=tk.W, pady=5)
+        
+        # Shape options - future expansion
+        
+        # Buttons frame
+        button_frame = ttk.Frame(main_frame)
+        button_frame.grid(row=9, column=0, columnspan=2, pady=(20, 0))
+        
+        ttk.Button(button_frame, text="Apply", command=self.on_apply).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(button_frame, text="Close", command=self.on_close).pack(side=tk.LEFT)
+    
+    def on_state_selected(self, event):
+        # Future enhancement: load individual state styling
+        pass
+    
+    def on_apply(self):
+        # Update visualizer settings
+        self.visualizer.node_colors = {
+            "regular": self.regular_color_var.get(),
+            "initial": self.initial_color_var.get(),
+            "final": self.final_color_var.get(),
+            "initial_final": self.initial_final_color_var.get()
+        }
+        
+        self.visualizer.node_size = self.node_size_var.get()
+        self.visualizer.font_size = self.font_size_var.get()
+        
+        # Update visualization
+        self.visualizer.visualize()
+    
+    def on_close(self):
+        self.dialog.destroy()
+        
+class WordSimulationDialog:
+    def __init__(self, parent, automaton, visualizer):
+        self.automaton = automaton
+        self.visualizer = visualizer
+        self.simulator = None
+        
+        # Create dialog
+        self.dialog = tk.Toplevel(parent)
+        self.dialog.title("Word Processing Simulation")
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+        
+        # Set window size and position
+        window_width = 400
+        window_height = 250
+        position_right = parent.winfo_x() + (parent.winfo_width() // 2) - (window_width // 2)
+        position_down = parent.winfo_y() + (parent.winfo_height() // 2) - (window_height // 2)
+        self.dialog.geometry(f"{window_width}x{window_height}+{position_right}+{position_down}")
+        
+        # Create widgets
+        self.create_widgets()
+        
+        # Wait for dialog to close
+        parent.wait_window(self.dialog)
+    
+    def create_widgets(self):
+        # Create the main frame
+        main_frame = ttk.Frame(self.dialog, padding=(10, 10, 10, 10))
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Word input
+        ttk.Label(main_frame, text="Enter word to process:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.word_var = tk.StringVar()
+        ttk.Entry(main_frame, textvariable=self.word_var, width=30).grid(row=0, column=1, sticky=tk.W+tk.E, pady=5)
+        
+        # Simulation speed
+        ttk.Label(main_frame, text="Simulation speed:").grid(row=1, column=0, sticky=tk.W, pady=5)
+        
+        speed_frame = ttk.Frame(main_frame)
+        speed_frame.grid(row=1, column=1, sticky=tk.W, pady=5)
+        
+        self.speed_var = tk.DoubleVar(value=1.0)
+        speed_scale = ttk.Scale(speed_frame, from_=0.2, to=3.0, orient=tk.HORIZONTAL,
+                               length=200, variable=self.speed_var)
+        speed_scale.pack(side=tk.LEFT)
+        
+        speed_label = ttk.Label(speed_frame, text="1.0 sec")
+        speed_label.pack(side=tk.LEFT, padx=(5, 0))
+        
+        # Update label when scale is moved
+        def update_speed_label(event):
+            speed_label.config(text=f"{speed_scale.get():.1f} sec")
+        
+        speed_scale.bind("<Motion>", update_speed_label)
+        
+        # Buttons
+        button_frame = ttk.Frame(main_frame)
+        button_frame.grid(row=2, column=0, columnspan=2, pady=(20, 0))
+        
+        ttk.Button(button_frame, text="Start Simulation", command=self.start_simulation).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(button_frame, text="Close", command=self.on_close).pack(side=tk.LEFT)
+    
+    def start_simulation(self):
+        word = self.word_var.get()
+        speed = self.speed_var.get()
+        
+        if not word and word != "":  # Allow empty word
+            tk.messagebox.showinfo("Error", "Please enter a word to process.")
+            return
+        
+        # Initialize the simulator
+        from gui.visualization import AutomatonSimulator
+        self.simulator = AutomatonSimulator(self.visualizer, self.automaton)
+        
+        # Start the simulation
+        self.dialog.withdraw()  # Hide dialog during simulation
+        self.simulator.simulate_word(word, speed)
+    
+    def on_close(self):
+        self.dialog.destroy()

@@ -611,3 +611,55 @@ class AutomatonEditor:
                 self.update_visualization()
                 
                 messagebox.showinfo("Success", "Transition deleted.")
+    
+    def create_visualization_tab(self):
+        """Create the tab for automaton visualization."""
+        tab = ttk.Frame(self.notebook)
+        self.notebook.add(tab, text="Visualization")
+    
+        # Create frame for the graph
+        self.graph_frame = ttk.Frame(tab)
+        self.graph_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    
+        # Create button frame
+        btn_frame = ttk.Frame(tab)
+        btn_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
+    
+        # Add visualization control buttons
+        ttk.Button(btn_frame, text="Refresh", 
+              command=self.update_visualization).pack(side=tk.LEFT, padx=(0, 5))
+    
+        ttk.Button(btn_frame, text="Customize Appearance", 
+              command=self.customize_appearance).pack(side=tk.LEFT, padx=(0, 5))
+    
+        ttk.Button(btn_frame, text="Simulate Word", 
+              command=self.simulate_word).pack(side=tk.LEFT, padx=(0, 5))
+    
+        ttk.Button(btn_frame, text="Export Image", 
+              command=self.export_visualization).pack(side=tk.LEFT)
+
+    def update_visualization(self):
+        """Update the automaton visualization."""
+        # Clear previous visualization
+        for widget in self.graph_frame.winfo_children():
+            widget.destroy()
+    
+        # Create and store the visualizer object
+        from gui.visualization import AutomatonVisualizer
+        self.visualizer = AutomatonVisualizer(self.graph_frame, self.automaton)
+        self.visualizer.visualize()
+
+    def customize_appearance(self):
+        """Open the dialog to customize visualization appearance."""
+        from gui.dialogs import StateStyleDialog
+        dialog = StateStyleDialog(self.frame, self.automaton, self.visualizer)
+
+    def simulate_word(self):
+        """Open the dialog to simulate word processing."""
+        from gui.dialogs import WordSimulationDialog
+        dialog = WordSimulationDialog(self.frame, self.automaton, self.visualizer)
+
+    def export_visualization(self):
+        """Export the visualization as an image file."""
+        if hasattr(self, 'visualizer'):
+            self.visualizer.save_figure()

@@ -1,0 +1,19 @@
+{
+    "name": "q",
+    "alphabet": {
+        "symbols": []
+    },
+    "states": [
+        {
+            "name": "q",
+            "is_initial": true,
+            "is_final": false
+        },
+        {
+            "name": "q0",
+            "is_initial": false,
+            "is_final": true
+        }
+    ],
+    "transitions": []
+}
