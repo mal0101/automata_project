@@ -104,6 +104,7 @@ class AutomatonVisualizer:
         self.draggable = None
         self.state_map = {}  # Maps state names to node objects
         self.custom_colors = None  # Store custom colors
+        self.custom_sizes = None  # Store custom sizes
     
     def visualize(self, interactive=True):
         # Clear previous visualization
@@ -139,7 +140,8 @@ class AutomatonVisualizer:
             self.pos = nx.spring_layout(G, seed=42)
         
         # Draw the graph using helper
-        VisualizationHelper.draw_graph(G, self.pos, ax, self.automaton.states, edge_labels, custom_colors=self.custom_colors)
+        VisualizationHelper.draw_graph(G, self.pos, ax, self.automaton.states, edge_labels, 
+                                     custom_colors=self.custom_colors, custom_sizes=self.custom_sizes)
         
         # Add title and legend
         ax.set_title(f"Automaton: {self.automaton.name}")
@@ -432,10 +434,14 @@ class VisualizationHelper:
         return node_colors, node_edge_colors
 
     @staticmethod
-    def draw_graph(G, pos, ax, states, edge_labels=None, highlight_states=None, highlight_edges=None, custom_colors=None):
+    def draw_graph(G, pos, ax, states, edge_labels=None, highlight_states=None, highlight_edges=None, custom_colors=None, custom_sizes=None):
         """Draw the graph with labels following edge curvature correctly."""
         # Get node colors
         node_colors, node_edge_colors = VisualizationHelper.get_node_colors(states, custom_colors)
+        
+        # Get custom sizes or use defaults
+        node_size = custom_sizes.get("node_size", 700) if custom_sizes else 700
+        font_size = custom_sizes.get("font_size", 12) if custom_sizes else 12
         
         # Adjust colors for highlighted states
         if highlight_states:
@@ -446,7 +452,7 @@ class VisualizationHelper:
         
         # Draw nodes
         nx.draw_networkx_nodes(G, pos, node_color=node_colors, 
-                             node_size=700, edgecolors=node_edge_colors, ax=ax)
+                             node_size=node_size, edgecolors=node_edge_colors, ax=ax)
         
         # Custom label positioning to follow curve correctly
         def curved_edge_label_pos(u, v, rad=0.4):
@@ -511,13 +517,13 @@ class VisualizationHelper:
                 if (u, v) in edge_labels:
                     label_x, label_y = curved_edge_label_pos(u, v)
                     ax.text(label_x, label_y, edge_labels[(u, v)], 
-                            fontsize=10, 
+                            fontsize=font_size, 
                             bbox=dict(facecolor='white', edgecolor='none', alpha=0.7),
                             horizontalalignment='center',
                             verticalalignment='center')
         
         # Draw node labels
-        nx.draw_networkx_labels(G, pos, font_size=12, ax=ax)
+        nx.draw_networkx_labels(G, pos, font_size=font_size, ax=ax)
         
         # Draw markers for initial and final states
         for state in states:

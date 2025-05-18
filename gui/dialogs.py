@@ -204,12 +204,17 @@ class StateStyleDialog:
         main_frame = ttk.Frame(self.dialog, padding=(10, 10, 10, 10))
         main_frame.pack(fill=tk.BOTH, expand=True)
         
-        # Get current colors from visualizer or use defaults
+        # Get current colors and sizes from visualizer or use defaults
         current_colors = self.visualizer.custom_colors or {
             "regular": "white",
             "initial": "lightblue",
             "final": "lightgreen",
             "initial_final": "orange"
+        }
+        
+        current_sizes = self.visualizer.custom_sizes or {
+            "node_size": 700,
+            "font_size": 12
         }
         
         # Color options
@@ -249,13 +254,13 @@ class StateStyleDialog:
         ttk.Label(main_frame, text="State Size").grid(row=6, column=0, columnspan=2, sticky=tk.W, pady=(10, 5))
         
         ttk.Label(main_frame, text="Node size:").grid(row=7, column=0, sticky=tk.W, pady=5)
-        self.node_size_var = tk.IntVar(value=700)
+        self.node_size_var = tk.IntVar(value=current_sizes["node_size"])
         node_size_spinbox = ttk.Spinbox(main_frame, from_=300, to=1200, increment=50, textvariable=self.node_size_var, width=5)
         node_size_spinbox.grid(row=7, column=1, sticky=tk.W, pady=5)
         
         # Label font size
         ttk.Label(main_frame, text="Font size:").grid(row=8, column=0, sticky=tk.W, pady=5)
-        self.font_size_var = tk.IntVar(value=12)
+        self.font_size_var = tk.IntVar(value=current_sizes["font_size"])
         font_size_spinbox = ttk.Spinbox(main_frame, from_=8, to=20, increment=1, textvariable=self.font_size_var, width=5)
         font_size_spinbox.grid(row=8, column=1, sticky=tk.W, pady=5)
         
@@ -280,6 +285,12 @@ class StateStyleDialog:
             "initial": self.initial_color_var.get(),
             "final": self.final_color_var.get(),
             "initial_final": self.initial_final_color_var.get()
+        }
+        
+        # Update size settings
+        self.visualizer.custom_sizes = {
+            "node_size": self.node_size_var.get(),
+            "font_size": self.font_size_var.get()
         }
         
         # Update visualization
