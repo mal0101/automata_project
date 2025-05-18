@@ -89,6 +89,7 @@ q1 (normal) for odd numbers
 
 ## 🔍 Project Structure
 
+```
 automata_project/
 ├── models/               # Core data models
 │   ├── state.py          # State representation
@@ -112,6 +113,7 @@ automata_project/
 ├── automata/             # Directory for saved automata
 ├── main.py               # Application entry point
 └── requirements.txt      # Required dependencies
+```
 
 ## 🧮 Algorithms
 The application implements several key algorithms from automata theory:
