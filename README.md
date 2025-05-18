@@ -61,18 +61,20 @@ A comprehensive Python application for creating, visualizing, and analyzing fini
 
 ## 📖 Usage Examples
 
+## 📖 Usage Examples
+
 ### Creating a Simple DFA
 1. Start the application and click "Create New Automaton"
 2. Give it a name like "EvenBinaryNumbers"
 3. Add states:
-q0 (initial, final) for even numbers
-q1 (normal) for odd numbers
+    - q0 (initial, final) for even numbers
+    - q1 (normal) for odd numbers
 4. Add alphabet symbols: 0, 1
 5. Add transitions:
-    q0 --0--> q0
-    q0 --1--> q1
-    q1 --0--> q0
-    q1 --1--> q1
+    - q0 --0--> q0
+    - q0 --1--> q1
+    - q1 --0--> q0
+    - q1 --1--> q1
 6. Save the automaton
 7. Test with input strings: "0" (accept), "1" (reject), "10" (accept)
 
