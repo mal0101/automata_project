@@ -6,7 +6,7 @@
 
 A comprehensive Python application for creating, visualizing, and analyzing finite automata (DFA and NFA). Perfect for educational purposes and theoretical computer science explorations.
 
-![Screenshot of Finite Automata Manager](screenshots/main_screenshot.png)
+
 
 ## 🌟 Features
 
